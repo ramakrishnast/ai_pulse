@@ -48,8 +48,13 @@ def _first_sentence(text: str) -> str:
 
 
 def heuristic_digest(stories: list[Story], trends: dict) -> dict:
-    top = [{"story_id": s.id, "line": s.why_it_matters or _first_sentence(s.summary) or s.title}
-           for s in stories[:10]]
+    def line(s: Story) -> str:
+        if s.why_it_matters or s.summary:
+            return s.why_it_matters or _first_sentence(s.summary)
+        outlets = sorted({i.source_name for i in s.items})
+        return f"Covered by {', '.join(outlets[:3])}{' and others' if len(outlets) > 3 else ''}."
+
+    top = [{"story_id": s.id, "line": line(s)} for s in stories[:10]]
     topics = []
     for r in trends.get("rising", [])[:3]:
         related = [s.id for s in stories if any(se.entity_id == r["id"] for se in s.entities)][:4]
@@ -65,7 +70,9 @@ def heuristic_digest(stories: list[Story], trends: dict) -> dict:
         for s in stories[:10]:
             cats[s.category] = cats.get(s.category, 0) + 1
         main = max(cats, key=cats.get)
-        headline = f"{len(stories)} stories tracked today; most of the top 10 are about {main.lower()}."
+        n = len(stories)
+        headline = (f"{n} {'story' if n == 1 else 'stories'} tracked today; "
+                    f"the biggest share is {main.lower()}.")
     return {"headline": headline, "top": top, "topics": topics}
 
 
