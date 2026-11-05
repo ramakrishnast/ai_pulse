@@ -1,0 +1,19 @@
+{
+  "kind": "Listing",
+  "data": {
+    "children": [
+      {"kind": "t3", "data": {"title": "[R] New paper on sparse attention", "url": "https://arxiv.org/abs/2611.00001v2",
+        "permalink": "/r/MachineLearning/comments/abc/new_paper/", "score": 320, "created_utc": 1793800000,
+        "is_self": false, "selftext": "", "subreddit": "MachineLearning"}},
+      {"kind": "t3", "data": {"title": "[D] Weekly discussion thread", "url": "https://www.reddit.com/r/MachineLearning/comments/def/",
+        "permalink": "/r/MachineLearning/comments/def/weekly/", "score": 999, "created_utc": 1793800000,
+        "is_self": true, "stickied": true, "selftext": "talk", "subreddit": "MachineLearning"}},
+      {"kind": "t3", "data": {"title": "Running a 70B model on two consumer GPUs", "url": "https://www.reddit.com/r/LocalLLaMA/comments/ghi/",
+        "permalink": "/r/LocalLLaMA/comments/ghi/running/", "score": 150, "created_utc": 1793801000,
+        "is_self": true, "selftext": "Here is my setup with **llama.cpp**.", "subreddit": "LocalLLaMA"}},
+      {"kind": "t3", "data": {"title": "Low score post", "url": "https://example.com/low",
+        "permalink": "/r/LocalLLaMA/comments/jkl/low/", "score": 3, "created_utc": 1793801000,
+        "is_self": false, "subreddit": "LocalLLaMA"}}
+    ]
+  }
+}

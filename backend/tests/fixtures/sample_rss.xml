@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example AI News</title>
+    <link>https://example.com</link>
+    <description>Synthetic test feed</description>
+    <item>
+      <title>Example Labs releases Nova-2, an open-weights reasoning model</title>
+      <link>https://www.example.com/news/nova-2/?utm_source=rss&amp;utm_medium=feed</link>
+      <description><![CDATA[<p>Example Labs has <b>released</b> Nova-2 &amp; its weights under Apache 2.0.</p><script>alert(1)</script>]]></description>
+      <pubDate>Tue, 03 Nov 2026 14:30:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>Chipmaker unveils inference accelerator for data centers</title>
+      <link>https://example.com/chips/accelerator</link>
+      <description>A new accelerator targets LLM inference workloads.</description>
+      <pubDate>Mon, 02 Nov 2026 09:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Item without a link is skipped</title>
+      <description>no link</description>
+    </item>
+  </channel>
+</rss>

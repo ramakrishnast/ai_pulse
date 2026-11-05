@@ -1,0 +1,269 @@
+# AI Pulse source list.
+#
+# Each source needs: id (unique, stable), name, type, url, group.
+#   type:  rss | hn | reddit | hf_papers
+#   group: lab | research | news | community | newsletter  (used for filters + ranking)
+# Optional:
+#   enabled: false        -> skip without deleting
+#   max_items: 30         -> keep at most N newest items per fetch
+#   ai_filter: true       -> keep only items whose title/snippet mentions AI keywords
+#                            (use for general-tech feeds)
+#   weight: 1.0           -> ranking boost (labs and primary sources count more)
+#   min_points / min_score -> community thresholds (hn / reddit)
+#   note: free text, ignored by the code
+#
+# To add a source: append an entry, then click "Refresh" in the UI (or run `make run`).
+# Source health (last success, last error, item count) is shown on the Sources page.
+
+defaults:
+  max_items: 30
+  timeout_seconds: 20
+  retries: 2
+  max_age_days: 7          # ignore items older than this
+
+sources:
+  # ---------------------------------------------------------------- Lab blogs
+  - id: openai
+    name: OpenAI
+    type: rss
+    url: https://openai.com/news/rss.xml
+    group: lab
+    weight: 1.5
+
+  - id: anthropic
+    name: Anthropic
+    type: rss
+    note: Anthropic has no official RSS feed; this is a community-maintained mirror.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml
+    group: lab
+    weight: 1.5
+
+  - id: deepmind
+    name: Google DeepMind
+    type: rss
+    url: https://deepmind.google/blog/rss.xml
+    group: lab
+    weight: 1.5
+
+  - id: google-research
+    name: Google Research
+    type: rss
+    url: https://research.google/blog/rss/
+    group: lab
+    weight: 1.3
+
+  - id: meta-ai
+    name: Meta AI
+    type: rss
+    note: No official feed; Google News search restricted to Meta's AI blog.
+    url: https://news.google.com/rss/search?q=site:ai.meta.com/blog&hl=en-US&gl=US&ceid=US:en
+    group: lab
+    weight: 1.4
+
+  - id: microsoft-research
+    name: Microsoft Research
+    type: rss
+    url: https://www.microsoft.com/en-us/research/feed/
+    group: lab
+    weight: 1.2
+
+  - id: mistral
+    name: Mistral AI
+    type: rss
+    note: No official feed; Google News search restricted to mistral.ai.
+    url: https://news.google.com/rss/search?q=site:mistral.ai/news&hl=en-US&gl=US&ceid=US:en
+    group: lab
+    weight: 1.3
+
+  - id: nvidia
+    name: NVIDIA Blog
+    type: rss
+    url: https://blogs.nvidia.com/feed/
+    group: lab
+    ai_filter: true
+    weight: 1.1
+
+  - id: nvidia-dev
+    name: NVIDIA Technical Blog
+    type: rss
+    url: https://developer.nvidia.com/blog/feed
+    group: lab
+    ai_filter: true
+    weight: 1.0
+
+  - id: huggingface
+    name: Hugging Face Blog
+    type: rss
+    url: https://huggingface.co/blog/feed.xml
+    group: lab
+    weight: 1.3
+
+  - id: cohere
+    name: Cohere
+    type: rss
+    note: No official feed; Google News search restricted to cohere.com/blog.
+    url: https://news.google.com/rss/search?q=site:cohere.com/blog&hl=en-US&gl=US&ceid=US:en
+    group: lab
+    weight: 1.1
+
+  - id: xai
+    name: xAI
+    type: rss
+    note: No official feed; Google News search restricted to x.ai/news.
+    url: https://news.google.com/rss/search?q=site:x.ai/news&hl=en-US&gl=US&ceid=US:en
+    group: lab
+    weight: 1.3
+
+  # ---------------------------------------------------------------- Research
+  - id: arxiv-cs-ai
+    name: arXiv cs.AI
+    type: rss
+    url: https://rss.arxiv.org/rss/cs.AI
+    group: research
+    max_items: 25
+    weight: 0.6
+
+  - id: arxiv-cs-cl
+    name: arXiv cs.CL
+    type: rss
+    url: https://rss.arxiv.org/rss/cs.CL
+    group: research
+    max_items: 25
+    weight: 0.6
+
+  - id: arxiv-cs-lg
+    name: arXiv cs.LG
+    type: rss
+    url: https://rss.arxiv.org/rss/cs.LG
+    group: research
+    max_items: 25
+    weight: 0.6
+
+  - id: arxiv-cs-ma
+    name: arXiv cs.MA
+    type: rss
+    url: https://rss.arxiv.org/rss/cs.MA
+    group: research
+    max_items: 15
+    weight: 0.6
+
+  - id: hf-daily-papers
+    name: Hugging Face Daily Papers
+    type: hf_papers
+    url: https://huggingface.co/api/daily_papers
+    group: research
+    max_items: 30
+    weight: 1.0
+
+  - id: paperswithcode
+    name: Papers with Code (trending)
+    type: rss
+    enabled: false
+    note: Papers with Code was shut down in 2025 and redirects to Hugging Face trending papers, which hf-daily-papers already covers.
+    url: https://paperswithcode.com/latest
+    group: research
+
+  # ---------------------------------------------------------------- Tech news
+  - id: techcrunch-ai
+    name: TechCrunch AI
+    type: rss
+    url: https://techcrunch.com/category/artificial-intelligence/feed/
+    group: news
+
+  - id: verge-ai
+    name: The Verge AI
+    type: rss
+    url: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+    group: news
+
+  - id: ars-ai
+    name: Ars Technica AI
+    type: rss
+    url: https://arstechnica.com/ai/feed/
+    group: news
+
+  - id: venturebeat-ai
+    name: VentureBeat AI
+    type: rss
+    url: https://venturebeat.com/category/ai/feed/
+    group: news
+
+  - id: the-decoder
+    name: The Decoder
+    type: rss
+    url: https://the-decoder.com/feed/
+    group: news
+
+  - id: register-ai
+    name: The Register AI
+    type: rss
+    url: https://www.theregister.com/software/ai_ml/headlines.atom
+    group: news
+
+  - id: mit-tr-ai
+    name: MIT Technology Review AI
+    type: rss
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    group: news
+
+  - id: wired-ai
+    name: Wired AI
+    type: rss
+    url: https://www.wired.com/feed/tag/ai/latest/rss
+    group: news
+
+  # ---------------------------------------------------------------- Community
+  - id: hackernews
+    name: Hacker News
+    type: hn
+    url: https://hn.algolia.com/api/v1/search_by_date
+    group: community
+    min_points: 80
+    max_items: 40
+    ai_filter: true
+    weight: 1.0
+
+  - id: reddit-ml
+    name: r/MachineLearning
+    type: reddit
+    url: https://www.reddit.com/r/MachineLearning/top.json?t=day&limit=30
+    group: community
+    min_score: 50
+    weight: 0.8
+
+  - id: reddit-localllama
+    name: r/LocalLLaMA
+    type: reddit
+    url: https://www.reddit.com/r/LocalLLaMA/top.json?t=day&limit=30
+    group: community
+    min_score: 100
+    weight: 0.8
+
+  # ---------------------------------------------------------------- Newsletters
+  - id: the-neuron
+    name: The Neuron
+    type: rss
+    url: https://www.theneurondaily.com/feed
+    group: newsletter
+
+  - id: import-ai
+    name: Import AI
+    type: rss
+    url: https://importai.substack.com/feed
+    group: newsletter
+    weight: 1.1
+
+  - id: latent-space
+    name: Latent Space
+    type: rss
+    url: https://www.latent.space/feed
+    group: newsletter
+    weight: 1.1
+
+  - id: simon-willison
+    name: Simon Willison
+    type: rss
+    url: https://simonwillison.net/atom/everything/
+    group: newsletter
+    ai_filter: true
+    weight: 1.1

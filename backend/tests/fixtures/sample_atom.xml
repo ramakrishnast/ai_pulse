@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Blog</title>
+  <id>urn:example:blog</id>
+  <updated>2026-11-04T08:00:00Z</updated>
+  <entry>
+    <title>Notes on building agents with tool calling</title>
+    <link href="https://blog.example.org/2026/Nov/4/agents/" rel="alternate"/>
+    <id>urn:example:1</id>
+    <updated>2026-11-04T08:00:00Z</updated>
+    <summary type="html">&lt;p&gt;Some notes on agent loops and evals.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>A post about gardening</title>
+    <link href="https://blog.example.org/2026/Nov/3/garden/"/>
+    <id>urn:example:2</id>
+    <updated>2026-11-03T08:00:00+02:00</updated>
+    <content type="html">Tomatoes and peppers.</content>
+  </entry>
+</feed>

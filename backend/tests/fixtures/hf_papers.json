@@ -1,0 +1,7 @@
+[
+  {"paper": {"id": "2611.00001", "title": "Sparse Attention at Scale", "summary": "We study sparse attention for long-context LLMs.", "upvotes": 42, "publishedAt": "2026-11-03T00:00:00.000Z"},
+   "publishedAt": "2026-11-04T06:00:00.000Z", "title": "Sparse Attention at Scale"},
+  {"paper": {"id": "2611.00002", "title": "Agents That Plan", "summary": "A planning benchmark for agents.", "upvotes": 7},
+   "publishedAt": "2026-11-04T07:00:00.000Z"},
+  {"paper": {"title": "Missing id is skipped"}}
+]

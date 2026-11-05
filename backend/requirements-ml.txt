@@ -1,0 +1,5 @@
+# Local embeddings (recommended). CPU-only torch keeps the image small:
+#   pip install -r requirements-ml.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# Without these packages AI Pulse falls back to a built-in hashing embedder.
+torch
+sentence-transformers>=3.0

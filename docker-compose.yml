@@ -1,0 +1,16 @@
+services:
+  ai-pulse:
+    build:
+      context: .
+      args:
+        WITH_ML: "1"   # set to "0" for a much smaller image using the hashing embedder
+    image: ai-pulse:latest
+    env_file: .env
+    environment:
+      DATABASE_URL: sqlite:////app/data/ai_pulse.db
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./backend/sources.yaml:/app/backend/sources.yaml:ro   # edit sources without rebuilding
+    restart: unless-stopped

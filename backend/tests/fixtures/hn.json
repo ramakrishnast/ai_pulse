@@ -1,0 +1,12 @@
+{
+  "hits": [
+    {"objectID": "1001", "title": "Show HN: A tiny LLM inference server in Rust", "url": "https://github.com/example/tiny-llm",
+     "points": 250, "num_comments": 80, "created_at_i": 1793800000},
+    {"objectID": "1002", "title": "The history of the bicycle", "url": "https://example.com/bikes",
+     "points": 400, "num_comments": 120, "created_at_i": 1793800100},
+    {"objectID": "1003", "title": "Ask HN: How do you evaluate RAG pipelines?", "url": null,
+     "story_text": "<p>We are building RAG for docs.</p>", "points": 120, "num_comments": 60, "created_at_i": 1793800200},
+    {"objectID": "1004", "title": "OpenAI announces new model", "url": "https://example.com/openai",
+     "points": 10, "num_comments": 3, "created_at_i": 1793800300}
+  ]
+}
