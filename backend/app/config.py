@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     llm_timeout_seconds: int = 90
     enrich_batch_size: int = 8
     enrich_max_stories_per_run: int = 200
+    enrich_window_days: int = 7  # summarize stories seen within this many days
 
     # --- embeddings / dedupe / clustering
     embedding_backend: str = "auto"  # auto | sentence-transformers | hashing

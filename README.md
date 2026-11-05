@@ -17,7 +17,7 @@ cp .env.example .env          # add OPENAI_API_KEY (or set LLM_PROVIDER=none)
 docker compose up --build     # http://localhost:8000
 ```
 
-Data lives in `./data/ai_pulse.db`. `sources.yaml` is mounted into the container, so you can edit sources without rebuilding. To build a smaller image without PyTorch, set the build arg `WITH_ML: "0"`; it then uses the built-in hashing embedder.
+Data lives in `./data/ai_pulse.db`. If Docker Hub rate-limits you (HTTP 429), pull the same official images from Google's mirror first: `docker pull mirror.gcr.io/library/python:3.12-slim && docker tag mirror.gcr.io/library/python:3.12-slim python:3.12-slim`, and the same for `node:22-alpine`. `sources.yaml` is mounted into the container, so you can edit sources without rebuilding. To build a smaller image without PyTorch, set the build arg `WITH_ML: "0"`; it then uses the built-in hashing embedder.
 
 ### Local
 
@@ -48,6 +48,7 @@ Other targets:
 | `LLM_MAX_CALLS_PER_RUN` | `40` | **cost guard**: hard cap on LLM calls per run |
 | `LLM_MAX_TOKENS_PER_RUN` | `400000` | **cost guard**: stop calling once this many tokens were used |
 | `ENRICH_BATCH_SIZE` | `8` | stories summarized per call (fewer calls, cheaper) |
+| `ENRICH_WINDOW_DAYS` | `7` | summarize stories from the last N days, highest-ranked first; one call is always kept for the digest |
 | `APP_TIMEZONE` | `UTC` | defines "today" for the once-per-day run |
 | `AUTO_RUN_ON_OPEN` | `true` | first visit of the day triggers the run |
 | `SCHEDULE_CRON` | | optional, e.g. `0 6 * * *`, to also run on a schedule (useful with email) |
@@ -118,7 +119,7 @@ Edit `backend/sources.yaml`:
 Set `enabled: false` to pause a source without deleting it. Changes apply on the next run; click **Refresh** to run now. The **Sources** page shows each feed's last fetch, item count and last error.
 
 Notes on the default list:
-- Anthropic, Meta AI, Mistral, Cohere and xAI don't publish official RSS feeds. AI Pulse uses a community-maintained Anthropic mirror and Google News site-restricted searches for the others. Swap in official feeds if they appear.
+- Anthropic, Mistral, Cohere and xAI don't publish official RSS feeds. AI Pulse uses the community-maintained mirrors at [Olshansk/rss-feeds](https://github.com/Olshansk/rss-feeds), which link to the original articles. The same mirrors add OpenAI Research, Anthropic Research, Google's developer AI blog, Cursor and Ollama. Meta AI uses a Google News site search because its mirror is stale. Swap in official feeds if they appear.
 - Papers with Code was shut down in 2025 and now redirects to Hugging Face, so that entry is disabled. Hugging Face Daily Papers covers trending papers.
 - Reddit sometimes rate-limits or blocks anonymous JSON requests from cloud IPs. Those sources then show an error and the run continues.
 

@@ -38,6 +38,22 @@ sources:
     group: lab
     weight: 1.5
 
+  - id: openai-research
+    name: OpenAI Research
+    type: rss
+    note: Community-maintained mirror of openai.com research posts.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_openai_research.xml
+    group: lab
+    weight: 1.4
+
+  - id: anthropic-research
+    name: Anthropic Research
+    type: rss
+    note: Community-maintained mirror of anthropic.com/research.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml
+    group: lab
+    weight: 1.3
+
   - id: deepmind
     name: Google DeepMind
     type: rss
@@ -60,6 +76,14 @@ sources:
     group: lab
     weight: 1.4
 
+  - id: google-ai-devs
+    name: Google AI (Developers Blog)
+    type: rss
+    note: Community-maintained mirror of Google's developer blog AI posts.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_google_ai.xml
+    group: lab
+    weight: 1.2
+
   - id: microsoft-research
     name: Microsoft Research
     type: rss
@@ -70,8 +94,8 @@ sources:
   - id: mistral
     name: Mistral AI
     type: rss
-    note: No official feed; Google News search restricted to mistral.ai.
-    url: https://news.google.com/rss/search?q=site:mistral.ai/news&hl=en-US&gl=US&ceid=US:en
+    note: No official feed; community-maintained mirror of mistral.ai/news.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_mistral.xml
     group: lab
     weight: 1.3
 
@@ -101,18 +125,34 @@ sources:
   - id: cohere
     name: Cohere
     type: rss
-    note: No official feed; Google News search restricted to cohere.com/blog.
-    url: https://news.google.com/rss/search?q=site:cohere.com/blog&hl=en-US&gl=US&ceid=US:en
+    note: No official feed; community-maintained mirror of cohere.com/blog.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_cohere.xml
     group: lab
     weight: 1.1
 
   - id: xai
     name: xAI
     type: rss
-    note: No official feed; Google News search restricted to x.ai/news.
-    url: https://news.google.com/rss/search?q=site:x.ai/news&hl=en-US&gl=US&ceid=US:en
+    note: No official feed; community-maintained mirror of x.ai/news.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_xainews.xml
     group: lab
     weight: 1.3
+
+  - id: cursor
+    name: Cursor Blog
+    type: rss
+    note: Community-maintained mirror of cursor.com/blog.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_cursor.xml
+    group: lab
+    weight: 1.0
+
+  - id: ollama
+    name: Ollama Blog
+    type: rss
+    note: Community-maintained mirror of ollama.com/blog.
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_ollama.xml
+    group: lab
+    weight: 1.0
 
   # ---------------------------------------------------------------- Research
   - id: arxiv-cs-ai

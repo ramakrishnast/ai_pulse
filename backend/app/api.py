@@ -153,24 +153,29 @@ def get_story(story_id: int, session: Session = Depends(get_session)):
     story = session.scalar(_load(select(Story).where(Story.id == story_id)))
     if story is None:
         raise HTTPException(404, "story not found")
-    related = []
+    return {"story": story_card(story), "related": related_stories(session, story)}
+
+
+def related_stories(session: Session, story: Story, limit: int = 6) -> list[dict]:
+    """Rank nearby stories by text similarity plus shared companies/models/topics."""
     embedder = get_embedder()
     vec = from_bytes(story.centroid, embedder.dim)
-    if vec is not None:
-        window = timedelta(days=14)
-        others = session.scalars(select(Story).where(
-            Story.id != story.id, Story.last_seen >= story.last_seen - window,
-            Story.last_seen <= story.last_seen + window))
-        scored = []
-        for o in others:
-            ov = from_bytes(o.centroid, embedder.dim)
-            if ov is not None:
-                scored.append((float(np.dot(vec, ov)), o))
-        scored.sort(key=lambda x: x[0], reverse=True)
-        related = [{"id": o.id, "title": o.title, "category": o.category, "importance": o.importance,
-                    "last_seen": iso(o.last_seen), "similarity": round(sim, 3)}
-                   for sim, o in scored[:6] if sim > 0.2]
-    return {"story": story_card(story), "related": related}
+    my_entities = {se.entity_id for se in story.entities}
+    window = timedelta(days=14)
+    others = session.scalars(_load(select(Story).where(
+        Story.id != story.id, Story.last_seen >= story.last_seen - window,
+        Story.last_seen <= story.last_seen + window)))
+    scored = []
+    for o in others:
+        ov = from_bytes(o.centroid, embedder.dim)
+        sim = float(np.dot(vec, ov)) if vec is not None and ov is not None else 0.0
+        shared = len(my_entities & {se.entity_id for se in o.entities})
+        score = sim + 0.15 * min(shared, 3) + (0.05 if o.category == story.category else 0.0)
+        if sim > 0.2 or shared:
+            scored.append((score, o))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [{"id": o.id, "title": o.title, "category": o.category, "importance": o.importance,
+             "last_seen": iso(o.last_seen), "score": round(s, 3)} for s, o in scored[:limit]]
 
 
 class FlagBody(BaseModel):

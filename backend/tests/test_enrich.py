@@ -84,3 +84,24 @@ def test_apply_enrichment_validates(db):
         assert st.tags == ["open weights"]
         assert {se.entity.name for se in st.entities} == {"Example Labs", "Nova-2", "open weights"}
         assert not apply_enrichment(s, st, {"summary": ""}, model="fake")
+
+
+def test_lab_blog_posts_are_tagged_with_the_lab(db):
+    from app.db import Item, Story, session_scope
+    from app.enrich import heuristic_pass, lab_companies
+
+    with session_scope() as s:
+        st = Story(title="t", first_seen=datetime.utcnow(), last_seen=datetime.utcnow())
+        s.add(st)
+        s.flush()
+        s.add(Item(url="u2", url_norm="u2", title="Strengthening our defenses", snippet="",
+                   source_id="anthropic-research", source_name="Anthropic Research", source_group="lab",
+                   published_at=datetime.utcnow(), story_id=st.id))
+        s.add(Item(url="u3", url_norm="u3", title="Strengthening defenses", snippet="",
+                   source_id="hn", source_name="Hacker News", source_group="community",
+                   published_at=datetime.utcnow(), story_id=st.id))
+        s.flush()
+        s.refresh(st)
+        assert lab_companies(st) == ["Anthropic"]
+        heuristic_pass(s, [st])
+        assert [se.entity.name for se in st.entities] == ["Anthropic"]

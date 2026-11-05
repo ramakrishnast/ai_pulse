@@ -134,7 +134,7 @@ def set_entities(session: Session, story: Story, entities: dict[str, list[str]],
             session.flush()
         if ent.id not in seen:
             seen.add(ent.id)
-            story.entities.append(StoryEntity(entity_id=ent.id))
+            story.entities.append(StoryEntity(entity=ent))
     story.tags = [n for k, n in pairs if k == "topic"][:8]
 
 
@@ -238,8 +238,10 @@ def apply_enrichment(session: Session, story: Story, data: dict, model: str) -> 
     except (TypeError, ValueError):
         story.importance = 2
     story.why_it_matters = str(data.get("why_it_matters") or "").strip()[:300]
-    ents = data.get("entities") if isinstance(data.get("entities"), dict) else {}
+    ents = dict(data.get("entities")) if isinstance(data.get("entities"), dict) else {}
     topics = data.get("topics") if isinstance(data.get("topics"), list) else []
+    companies = [c for c in ents.get("companies", []) if isinstance(c, str)]
+    ents["companies"] = companies + [c for c in lab_companies(story) if c not in companies]
     set_entities(session, story, ents, topics)
     story.enriched = True
     story.enriched_model = model
@@ -252,26 +254,47 @@ def heuristic_pass(session: Session, stories: list[Story]) -> None:
         if story.enriched or story.entities:
             continue
         text = " ".join(f"{i.title}. {i.snippet}" for i in story.items)
-        set_entities(session, story, heuristic_entities(text))
+        ents = heuristic_entities(text)
+        ents["companies"] += [c for c in lab_companies(story) if c not in ents["companies"]]
+        set_entities(session, story, ents)
+
+
+def lab_companies(story: Story) -> list[str]:
+    """A post on a lab's own blog is about that lab, even if the text never names it."""
+    found: list[str] = []
+    for item in story.items:
+        if item.source_group != "lab":
+            continue
+        for name in heuristic_entities(item.source_name)["companies"]:
+            if name not in found:
+                found.append(name)
+    return found
 
 
 def enrich_stories(session: Session, llm: LLMClient, weights: dict[str, float]) -> dict:
     from .cluster import refresh_story
 
     settings = get_settings()
-    since = utcnow() - timedelta(days=settings.cluster_window_days)
+    since = utcnow() - timedelta(days=settings.enrich_window_days)
     pending = list(session.scalars(
         select(Story).where(Story.enriched.is_(False), Story.last_seen >= since)
         .order_by(Story.rank_score.desc()).limit(settings.enrich_max_stories_per_run)
     ))
     stats = {"enrich_candidates": len(pending), "enriched": 0, "rejected": 0, "llm_errors": 0,
              "budget_stopped": False}
-    heuristic_pass(session, pending)
+    untagged = list(session.scalars(
+        select(Story).where(Story.enriched.is_(False), ~Story.entities.any())
+    ))
+    heuristic_pass(session, untagged)
     session.flush()
     if not llm.available or not pending:
         return stats
     size = max(1, settings.enrich_batch_size)
     for start in range(0, len(pending), size):
+        if llm.budget_left <= 1:  # always keep one call for the daily digest
+            log.warning("enrich: stopping to reserve the last LLM call for the digest")
+            stats["budget_stopped"] = True
+            break
         batch = pending[start:start + size]
         user = json.dumps({"stories": [_story_payload(s) for s in batch]}, ensure_ascii=False)
         try:
