@@ -28,8 +28,14 @@ def _start_scheduler():
 
     from . import runner
 
+    try:
+        trigger = CronTrigger.from_crontab(cron, timezone=get_settings().app_timezone)
+    except ValueError as exc:
+        log.error("SCHEDULE_CRON=%r is not a valid 5-field cron expression (%s); scheduled runs disabled. "
+                  "The app still runs once a day when you open it.", cron, exc)
+        return None
     sched = BackgroundScheduler(timezone=get_settings().app_timezone)
-    sched.add_job(lambda: runner.start_background_run("schedule"), CronTrigger.from_crontab(cron))
+    sched.add_job(lambda: runner.start_background_run("schedule"), trigger)
     sched.start()
     log.info("scheduled daily run: %s (%s)", cron, get_settings().app_timezone)
     return sched
