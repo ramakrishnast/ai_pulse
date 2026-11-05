@@ -45,7 +45,10 @@ export type Status = {
   running: boolean;
   has_run_today: boolean;
   run: Run | null;
-  llm: { provider: string; model: string; available: boolean };
+  llm: {
+    provider: string; model: string; available: boolean;
+    budget: { spent_usd: number; cap_usd: number; remaining_usd: number; per_run_cap_usd: number; exhausted: boolean };
+  };
   counts: { stories: number; items: number };
   categories: string[];
 };

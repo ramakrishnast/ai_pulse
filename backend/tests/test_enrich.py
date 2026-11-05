@@ -105,3 +105,46 @@ def test_lab_blog_posts_are_tagged_with_the_lab(db):
         assert lab_companies(st) == ["Anthropic"]
         heuristic_pass(s, [st])
         assert [se.entity.name for se in st.entities] == ["Anthropic"]
+
+
+def test_dollar_budget_and_model_guard(db, monkeypatch):
+    from app import config
+    from app.llm import LLMClient, LLMUnavailable, budget_status, ledger
+
+    monkeypatch.setenv("LLM_PRICE_INPUT_PER_MTOK", "1.0")
+    monkeypatch.setenv("LLM_PRICE_OUTPUT_PER_MTOK", "10.0")
+    monkeypatch.setenv("LLM_BUDGET_USD_TOTAL", "0.05")
+    monkeypatch.setenv("LLM_BUDGET_USD_PER_RUN", "0.03")
+    config.get_settings.cache_clear()
+    ledger.reset()
+
+    def fake(model, system, user, max_tokens, json_mode):
+        return "{}", 1000, 1000  # $0.001 + $0.01 = $0.011 per call
+
+    # model guard: only gpt-6-luna may be called
+    with pytest.raises(LLMUnavailable):
+        LLMClient(transport=fake).complete("s", "u", purpose="ask", model="gpt-6-sol")
+
+    # per-run cap: the worst-case estimate (1000 output tokens = $0.01) must fit in what is left
+    from app.db import Run, session_scope
+    with session_scope() as s:
+        r = Run(date="2026-11-05", trigger="test")
+        s.add(r)
+        s.flush()
+        run_id = r.id
+    run = LLMClient(transport=fake, run_id=run_id, max_calls=100)
+    run.complete("s", "u", purpose="enrich", max_output_tokens=1000)
+    run.complete("s", "u", purpose="enrich", max_output_tokens=1000)
+    with pytest.raises(BudgetExceeded):  # $0.022 spent + $0.010 worst case > $0.03
+        run.complete("s", "u", purpose="enrich", max_output_tokens=1000)
+
+    # total cap persists across clients and restarts (spend is rebuilt from the usage log)
+    ledger.reset()
+    assert abs(budget_status()["spent_usd"] - 0.022) < 1e-6
+    other = LLMClient(transport=fake, max_calls=100)
+    other.complete("s", "u", purpose="ask", max_output_tokens=1000)
+    other.complete("s", "u", purpose="ask", max_output_tokens=1000)  # $0.044 total
+    with pytest.raises(BudgetExceeded):
+        other.complete("s", "u", purpose="ask", max_output_tokens=1000)
+    assert budget_status()["spent_usd"] <= 0.05
+    config.get_settings.cache_clear()

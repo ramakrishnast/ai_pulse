@@ -38,9 +38,16 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = ""
     anthropic_api_key: str = ""
-    llm_max_calls_per_run: int = 40
+    llm_allowed_models: str = "gpt-6-luna"  # comma-separated; calls to any other model are refused
+    # Spend guard (USD). Prices are per 1M tokens; check your provider's current price list.
+    llm_price_input_per_mtok: float = 0.10
+    llm_price_output_per_mtok: float = 0.50
+    llm_budget_usd_total: float = 0.15  # lifetime cap across all runs + Ask the news
+    llm_budget_usd_per_run: float = 0.02  # cap for one pipeline run
+    llm_reasoning_effort: str = ""  # optional, e.g. "low" or "minimal" if the model supports it
+    llm_max_calls_per_run: int = 20
     llm_max_tokens_per_run: int = 400_000
-    llm_max_output_tokens: int = 4000
+    llm_max_output_tokens: int = 3000
     llm_timeout_seconds: int = 90
     enrich_batch_size: int = 8
     enrich_max_stories_per_run: int = 200

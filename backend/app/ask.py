@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .config import get_settings
 from .db import Item, Story, utcnow
 from .embeddings import from_bytes, get_embedder
-from .llm import LLMClient, LLMUnavailable
+from .llm import BudgetExceeded, LLMClient, LLMUnavailable
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +74,10 @@ def answer(session: Session, question: str, llm: LLMClient | None = None) -> dic
     try:
         text = llm.complete(ASK_PROMPT, f"Stories:\n{context}\n\nQuestion: {question}", purpose="ask",
                             model=get_settings().chat_model, max_output_tokens=900)
+    except BudgetExceeded as exc:
+        log.warning("ask skipped: %s", exc)
+        return {"answer": "The LLM spending cap has been reached, so here are the most relevant stored stories.",
+                "citations": citations, "llm": False}
     except (LLMUnavailable, Exception) as exc:
         log.warning("ask failed: %s", exc)
         return {"answer": f"The LLM call failed ({type(exc).__name__}); here are the most relevant stories.",

@@ -297,9 +297,14 @@ def enrich_stories(session: Session, llm: LLMClient, weights: dict[str, float]) 
             break
         batch = pending[start:start + size]
         user = json.dumps({"stories": [_story_payload(s) for s in batch]}, ensure_ascii=False)
+        max_out = min(settings.llm_max_output_tokens, 450 * len(batch) + 300)
+        digest_reserve = llm.estimate("x" * 12000, "", 2500)  # keep enough for the digest call
+        if llm.usd_left() < llm.estimate(SYSTEM_PROMPT, user, max_out) + digest_reserve:
+            log.warning("enrich: stopping to keep dollar budget for the digest ($%.4f left)", llm.usd_left())
+            stats["budget_stopped"] = True
+            break
         try:
-            out = llm.complete_json(SYSTEM_PROMPT, user, purpose="enrich",
-                                    max_output_tokens=min(settings.llm_max_output_tokens, 450 * len(batch) + 300))
+            out = llm.complete_json(SYSTEM_PROMPT, user, purpose="enrich", max_output_tokens=max_out)
         except BudgetExceeded as exc:
             log.warning("enrich: stopping, %s", exc)
             stats["budget_stopped"] = True

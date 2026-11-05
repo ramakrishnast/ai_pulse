@@ -133,6 +133,8 @@ export default function App() {
             {status.counts.stories} stories from {status.counts.items} articles ·{" "}
             {status.run?.finished_at ? `last updated ${new Date(status.run.finished_at).toLocaleString()}` : "not updated yet"} ·{" "}
             {status.llm.available ? `summaries by ${status.llm.model}` : "no LLM key configured: summaries off"}
+            {status.llm.available && ` · LLM spend $${status.llm.budget.spent_usd.toFixed(3)} of $${status.llm.budget.cap_usd.toFixed(2)}`}
+            {status.llm.available && status.llm.budget.exhausted && " (cap reached: summaries paused)"}
             {" · "}Summaries are AI-written paraphrases. Always check the original sources.
           </>
         )}

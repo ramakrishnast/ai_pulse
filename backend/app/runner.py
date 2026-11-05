@@ -94,6 +94,7 @@ def run_pipeline(trigger: str = "cli", transport=None, llm: LLMClient | None = N
                 run.stats = {**(run.stats or {}), "emailed": emailed, "llm_calls": llm.usage.calls,
                              "llm_input_tokens": llm.usage.input_tokens,
                              "llm_output_tokens": llm.usage.output_tokens,
+                             "llm_cost_usd": round(llm.run_cost, 5),
                              "seconds": round(time.monotonic() - t0, 1)}
             log.info("run %s finished in %.1fs | LLM calls=%d tokens in=%d out=%d", run_id,
                      time.monotonic() - t0, llm.usage.calls, llm.usage.input_tokens, llm.usage.output_tokens)

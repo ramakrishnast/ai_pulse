@@ -45,7 +45,11 @@ Other targets:
 | `LLM_PROVIDER` | `openai` | `openai`, `anthropic` or `none` (heuristic categories, no summaries) |
 | `LLM_MODEL` | `gpt-6-luna` | model for enrichment; `LLM_DIGEST_MODEL` / `LLM_CHAT_MODEL` override the digest and chat |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | | never commit these; `.env` is git-ignored |
-| `LLM_MAX_CALLS_PER_RUN` | `40` | **cost guard**: hard cap on LLM calls per run |
+| `LLM_ALLOWED_MODELS` | `gpt-6-luna` | calls to any other model are refused |
+| `LLM_BUDGET_USD_TOTAL` | `0.15` | **spend guard**: lifetime dollar cap (runs + digests + Ask the news) |
+| `LLM_BUDGET_USD_PER_RUN` | `0.02` | **spend guard**: dollar cap for one daily run |
+| `LLM_PRICE_INPUT_PER_MTOK` / `LLM_PRICE_OUTPUT_PER_MTOK` | `0.10` / `0.50` | USD per 1M tokens used for the spend math; check your provider's price list |
+| `LLM_MAX_CALLS_PER_RUN` | `20` | **cost guard**: hard cap on LLM calls per run |
 | `LLM_MAX_TOKENS_PER_RUN` | `400000` | **cost guard**: stop calling once this many tokens were used |
 | `ENRICH_BATCH_SIZE` | `8` | stories summarized per call (fewer calls, cheaper) |
 | `ENRICH_WINDOW_DAYS` | `7` | summarize stories from the last N days, highest-ranked first; one call is always kept for the digest |
@@ -59,6 +63,18 @@ Other targets:
 | `DATABASE_URL` | SQLite in `./data` | any SQLAlchemy URL, e.g. `postgresql+psycopg://…` (install the driver) |
 
 Every LLM call is logged (purpose, model, input/output tokens) to the `llm_usage` table and the server log. Totals per run are in `runs.stats` and at `/api/usage`.
+
+### Spend guard
+
+The defaults keep total OpenAI spend under **$0.15**, using only `gpt-6-luna`:
+
+- **Worst-case check before every call:** before each call the app estimates the worst case (a pessimistic input-token count plus every allowed output token). It refuses the call if that could exceed the per-run cap (`$0.02`) or the lifetime cap (`$0.15`).
+- **Spend survives restarts:** spend is rebuilt from the `llm_usage` log, so restarts don't reset it.
+- **The briefing comes first:** summarizing stops early so there is always budget left for the daily briefing.
+- **When the cap is reached:** the app keeps working without the LLM. You get heuristic categories and tags, an auto-generated briefing, and "Ask the news" returns the most relevant stories with links. The page footer shows `LLM spend $x of $0.15`.
+- **Typical cost:** a daily run is about 3–20 calls, roughly $0.002–$0.02 at the default prices.
+
+The dollar math depends on the prices you configure. As a second safety net, also set a monthly budget limit on your OpenAI project in the OpenAI dashboard.
 
 ## Architecture
 

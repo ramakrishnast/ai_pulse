@@ -24,7 +24,10 @@ def db(tmp_path, monkeypatch):
     dbmod.reset_engine()
     dbmod.init_db()
     embeddings.set_embedder(embeddings.HashingEmbedder())
+    from app.llm import ledger
+    ledger.reset()
     yield dbmod
+    ledger.reset()
     dbmod.reset_engine()
     config.get_settings.cache_clear()
 

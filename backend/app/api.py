@@ -15,7 +15,7 @@ from .config import get_settings
 from .db import Digest, Entity, Item, LLMUsage, SourceStatus, Story, StoryEntity, get_session, utcnow
 from .embeddings import from_bytes, get_embedder
 from .enrich import CATEGORIES
-from .llm import LLMClient
+from .llm import LLMClient, budget_status
 from .sources import load_sources
 from .trends import compute_trends
 
@@ -63,7 +63,8 @@ def status(session: Session = Depends(get_session)):
         "running": runner.is_running(),
         "has_run_today": runner.has_run_today(),
         "run": runner.current_run(),
-        "llm": {"provider": s.llm_provider, "model": s.llm_model, "available": llm.available},
+        "llm": {"provider": s.llm_provider, "model": s.llm_model, "available": llm.available,
+                "budget": budget_status(s)},
         "counts": {"stories": session.scalar(select(func.count(Story.id))),
                    "items": session.scalar(select(func.count(Item.id)))},
         "categories": CATEGORIES,

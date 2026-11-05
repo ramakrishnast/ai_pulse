@@ -21,6 +21,73 @@ class BudgetExceeded(RuntimeError):
     pass
 
 
+def cost_usd(input_tokens: int, output_tokens: int, settings: Settings | None = None) -> float:
+    s = settings or get_settings()
+    return input_tokens * s.llm_price_input_per_mtok / 1e6 + output_tokens * s.llm_price_output_per_mtok / 1e6
+
+
+def estimate_tokens(text: str) -> int:
+    """Deliberately pessimistic token estimate (~3 chars/token) used for pre-call budget checks."""
+    return len(text) // 3 + 20
+
+
+class SpendLedger:
+    """Process-wide USD spend: DB history (loaded once) + calls made since, + in-flight reservations."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._baseline: float | None = None
+        self._since = 0.0
+        self._reserved = 0.0
+
+    def _ensure_baseline(self) -> None:
+        if self._baseline is not None:
+            return
+        from sqlalchemy import func, select
+        try:
+            with session_scope() as s:
+                tin, tout = s.execute(select(func.coalesce(func.sum(LLMUsage.input_tokens), 0),
+                                             func.coalesce(func.sum(LLMUsage.output_tokens), 0))).one()
+            self._baseline = cost_usd(int(tin), int(tout))
+        except Exception:
+            log.exception("could not load LLM spend history; assuming the budget is used up")
+            self._baseline = float("inf")
+
+    def spent(self) -> float:
+        with self._lock:
+            self._ensure_baseline()
+            return self._baseline + self._since
+
+    def reserve(self, amount: float, cap: float) -> bool:
+        with self._lock:
+            self._ensure_baseline()
+            if self._baseline + self._since + self._reserved + amount > cap:
+                return False
+            self._reserved += amount
+            return True
+
+    def settle(self, reserved: float, actual: float) -> None:
+        with self._lock:
+            self._reserved = max(0.0, self._reserved - reserved)
+            self._since += actual
+
+    def reset(self) -> None:
+        with self._lock:
+            self._baseline, self._since, self._reserved = None, 0.0, 0.0
+
+
+ledger = SpendLedger()
+
+
+def budget_status(settings: Settings | None = None) -> dict:
+    s = settings or get_settings()
+    spent = ledger.spent()
+    return {"spent_usd": round(spent, 4), "cap_usd": s.llm_budget_usd_total,
+            "remaining_usd": round(max(0.0, s.llm_budget_usd_total - spent), 4),
+            "per_run_cap_usd": s.llm_budget_usd_per_run,
+            "exhausted": spent >= s.llm_budget_usd_total - 1e-9}
+
+
 class LLMUnavailable(RuntimeError):
     pass
 
@@ -41,6 +108,8 @@ def _openai_transport(settings: Settings) -> Transport:
         }
         if json_mode:
             params["response_format"] = {"type": "json_object"}
+        if settings.llm_reasoning_effort:
+            params["reasoning_effort"] = settings.llm_reasoning_effort
         resp = client.chat.completions.create(**params)
         text = resp.choices[0].message.content or ""
         usage = resp.usage
@@ -129,6 +198,21 @@ class LLMClient:
     def budget_left(self) -> int:
         return max(0, self.max_calls - self.usage.calls)
 
+    @property
+    def run_cost(self) -> float:
+        return cost_usd(self.usage.input_tokens, self.usage.output_tokens, self.settings)
+
+    def usd_left(self) -> float:
+        total_left = self.settings.llm_budget_usd_total - ledger.spent()
+        run_left = self.settings.llm_budget_usd_per_run - self.run_cost if self.run_id is not None else total_left
+        return max(0.0, min(total_left, run_left))
+
+    def estimate(self, system: str, user: str, max_output_tokens: int) -> float:
+        return cost_usd(estimate_tokens(system + user), max_output_tokens, self.settings)
+
+    def allowed_models(self) -> set[str]:
+        return {m.strip() for m in self.settings.llm_allowed_models.split(",") if m.strip()}
+
     def _check_budget(self) -> None:
         if self.usage.calls >= self.max_calls:
             raise BudgetExceeded(f"LLM call cap reached ({self.max_calls} calls)")
@@ -162,19 +246,35 @@ class LLMClient:
         if not self.available:
             raise LLMUnavailable("no LLM configured (set LLM_PROVIDER and its API key)")
         model = model or self.settings.llm_model
+        allowed = self.allowed_models()
+        if allowed and model not in allowed:
+            raise LLMUnavailable(f"model {model!r} is not in LLM_ALLOWED_MODELS ({', '.join(sorted(allowed))})")
         max_out = max_output_tokens or self.settings.llm_max_output_tokens
+        # Worst case: every output token is used. Refuse the call if that could break a cap.
+        estimate = self.estimate(system, user, max_out)
         with self._lock:
             self._check_budget()
+            if self.run_id is not None and self.run_cost + estimate > self.settings.llm_budget_usd_per_run:
+                raise BudgetExceeded(f"per-run budget ${self.settings.llm_budget_usd_per_run:.3f} reached "
+                                     f"(spent ${self.run_cost:.4f} this run)")
+            if not ledger.reserve(estimate, self.settings.llm_budget_usd_total):
+                raise BudgetExceeded(f"total LLM budget ${self.settings.llm_budget_usd_total:.3f} reached "
+                                     f"(spent ${ledger.spent():.4f})")
             self.usage.calls += 1
         try:
             text, tin, tout = self._transport(model, system, user, max_out, json_mode)
         except Exception:
+            ledger.settle(estimate, 0.0)
             self._record(purpose, model, 0, 0, ok=False)
             raise
+        actual = cost_usd(tin, tout, self.settings)
+        ledger.settle(estimate, actual)
         with self._lock:
             self.usage.input_tokens += tin
             self.usage.output_tokens += tout
         self._record(purpose, model, tin, tout, ok=True)
+        log.info("llm spend: this call $%.5f | this run $%.4f | total $%.4f of $%.3f",
+                 actual, self.run_cost, ledger.spent(), self.settings.llm_budget_usd_total)
         return text
 
     def complete_json(self, system: str, user: str, purpose: str, **kwargs):
